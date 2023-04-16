@@ -1,0 +1,26 @@
+{
+  "name": "cheesetouchbot",
+  "version": "1.0.0",
+  "description": "A fun Discord bot. Don't get the cheese touch!",
+  "main": "main.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaylamarc/CheeseTouchBot.js.git"
+  },
+  "author": "Kayla Marcantonio",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kaylamarc/CheeseTouchBot.js/issues"
+  },
+  "homepage": "https://github.com/kaylamarc/CheeseTouchBot.js#readme",
+  "dependencies": {
+    "discord.js": "^14.9.0",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.38.0"
+  }
+}
