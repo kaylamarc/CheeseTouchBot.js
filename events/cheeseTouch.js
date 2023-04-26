@@ -6,12 +6,13 @@ const commonWords = fs.readFileSync('blacklist.txt', 'utf8').split('\n');
 const blacklist = new Set(commonWords.slice(0, 100));
 
 module.exports = {
-	name: Events.MessageCreate,
+    name: Events.MessageCreate,
 	async execute(message) {
-
+        const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === "cheesetouch");
+        
         // grab the message content
         messageContent = message.content.toLowerCase();
-
+        
         // check if the message contains the codeword
         if (messageContent.includes("test")) {
 
@@ -49,9 +50,9 @@ module.exports = {
                 message.member.roles.add(role)
                   .then(() => {
                     console.log(`Role "${role.name}" has been assigned to ${message.author.username}.`);
-                    message.reply(`${message.author} has contracted the ${role}!`)
+                    message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`)
                     // DM the user that said codeword
-                    message.author.send(`YOU HAVE CONTRACTED THE **CHEESE TOUCH**\n Please enter a ***new*** codeword that is not already on the blacklist:\n${blacklist}`);
+                    message.author.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\n Please enter a ***new*** codeword that is not already on the blacklist:\n${blacklist}`);
                   })
                   .catch(error => {
                     console.error(error);
