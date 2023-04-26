@@ -66,9 +66,9 @@ module.exports = {
 
 // returns a string list of the blacklist
 function getBlacklistStr() {
-    let str = "";
-    blacklist.forEach((value) => {
-        str += `\n- ${value}`
-    });
-    return str;
+	str = "";
+	arr = Array.from(blacklist.values());
+
+	str = arr.join('\n- ')
+	return str;
 }
