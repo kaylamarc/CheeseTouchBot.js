@@ -6,7 +6,12 @@ const { token } = require('./config.json');
 
 // Create a new client instance
 const client = new Client({
-	intents: [GatewayIntentBits.Guilds],
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildMembers,
+	],
 	presence: {
 		activities: [{
 			type: ActivityType.Watching,
