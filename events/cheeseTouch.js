@@ -10,13 +10,13 @@ module.exports = {
     async execute(message) {
 
         //get the cheese touch emoji in the guild
-        const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === "cheesetouch");
+        const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
 
         // grab the message content
         messageContent = message.content.toLowerCase();
 
         // check if the message contains the codeword and that it's not from a bot
-        if (messageContent.includes("test") && !message.author.bot) {
+        if (messageContent.includes('test') && !message.author.bot) {
 
             // get author as guild member
             const member = message.member;
@@ -40,7 +40,7 @@ module.exports = {
                     if (member.id !== message.author.id) {
                         member.roles.remove(role)
                             .then(() => {
-                                console.log(`Role "${role.name}" has been removed from ${member.displayName}.`);
+                                console.log(`Role '${role.name}' has been removed from ${member.displayName}.`);
                             })
                             .catch(error => {
                                 console.error(error);
@@ -51,7 +51,7 @@ module.exports = {
                 // add the role to the message author
                 message.member.roles.add(role)
                     .then(() => {
-                        console.log(`Role "${role.name}" has been assigned to ${message.author.username}.`);
+                        console.log(`Role '${role.name}' has been assigned to ${message.author.username}.`);
                         message.react(cheeseTouchEmoji);
                         message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
                         // DM the user that said codeword
@@ -67,7 +67,7 @@ module.exports = {
 
 // returns a string list of the blacklist
 function getBlacklistStr() {
-	str = "\n- ";
+	str = '\n- ';
 	arr = Array.from(blacklist.values());
 	str += arr.join('\n- ')
 	return str;

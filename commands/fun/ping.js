@@ -1,4 +1,4 @@
-// User uses '/ping' command, bot replies with "Pong!"
+// User uses '/ping' command, bot replies with 'Pong!'
 
 const { SlashCommandBuilder } = require('discord.js');
 
