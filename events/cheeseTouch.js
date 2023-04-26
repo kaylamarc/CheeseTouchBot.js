@@ -52,7 +52,8 @@ module.exports = {
                 message.member.roles.add(role)
                     .then(() => {
                         console.log(`Role "${role.name}" has been assigned to ${message.author.username}.`);
-                        message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`)
+                        message.react(cheeseTouchEmoji);
+                        message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
                         // DM the user that said codeword
                         message.author.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\n Please enter a ***new*** codeword that is not already on the blacklist:${getBlacklistStr()}`);
                     })
@@ -66,9 +67,8 @@ module.exports = {
 
 // returns a string list of the blacklist
 function getBlacklistStr() {
-	str = "";
+	str = "\n- ";
 	arr = Array.from(blacklist.values());
-
-	str = arr.join('\n- ')
+	str += arr.join('\n- ')
 	return str;
 }
