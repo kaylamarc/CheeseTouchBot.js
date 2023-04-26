@@ -7,14 +7,14 @@ const blacklist = new Set(commonWords.slice(0, 100));
 
 module.exports = {
     name: Events.MessageCreate,
-	async execute(message) {
+    async execute(message) {
 
         //get the cheese touch emoji in the guild
         const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === "cheesetouch");
-        
+
         // grab the message content
         messageContent = message.content.toLowerCase();
-        
+
         // check if the message contains the codeword and that it's not from a bot
         if (messageContent.includes("test") && !message.author.bot) {
 
@@ -37,31 +37,31 @@ module.exports = {
 
                 // remove everyone that has the cheese touch role
                 membersWithRole.forEach(member => {
-                  if (member.id !== message.author.id) {
-                    member.roles.remove(role)
-                      .then(() => {
-                        console.log(`Role "${role.name}" has been removed from ${member.displayName}.`);
-                      })
-                      .catch(error => {
-                        console.error(error);
-                      });
-                  }
+                    if (member.id !== message.author.id) {
+                        member.roles.remove(role)
+                            .then(() => {
+                                console.log(`Role "${role.name}" has been removed from ${member.displayName}.`);
+                            })
+                            .catch(error => {
+                                console.error(error);
+                            });
+                    }
                 });
 
                 // add the role to the message author
                 message.member.roles.add(role)
-                  .then(() => {
-                    console.log(`Role "${role.name}" has been assigned to ${message.author.username}.`);
-                    message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`)
-                    // DM the user that said codeword
-                    message.author.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\n Please enter a ***new*** codeword that is not already on the blacklist:${getBlacklistStr()}`);
-                  })
-                  .catch(error => {
-                    console.error(error);
-                  });
-              }
+                    .then(() => {
+                        console.log(`Role "${role.name}" has been assigned to ${message.author.username}.`);
+                        message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`)
+                        // DM the user that said codeword
+                        message.author.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\n Please enter a ***new*** codeword that is not already on the blacklist:${getBlacklistStr()}`);
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            }
         }
-	},
+    },
 };
 
 // returns a string list of the blacklist
@@ -69,6 +69,6 @@ function getBlacklistStr() {
     let str = "";
     blacklist.forEach((value) => {
         str += `\n- ${value}`
-      });
-      return str;
+    });
+    return str;
 }
