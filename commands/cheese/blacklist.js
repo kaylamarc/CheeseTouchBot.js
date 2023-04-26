@@ -16,7 +16,7 @@ module.exports = {
 
 // returns a string list of the blacklist
 function getBlacklistStr() {
-	str = "";
+	str = "BLACKLISTED CODEWORDS:\n- ";
 	arr = Array.from(blacklist.values());
 
 	// initial blacklist before a user adds a codeword
@@ -24,7 +24,7 @@ function getBlacklistStr() {
 	if (arr.length > 100) {
 		codeword = arr.pop()
 	}
-	
-	str = arr.join('\n- ')
+
+	str += arr.join('\n- ')
 	return str;
 }
