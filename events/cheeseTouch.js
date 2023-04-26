@@ -20,12 +20,35 @@ module.exports = {
 
             // check if they already have the cheese touch
             if (member.roles.cache.some(role => role.name === 'Cheese Touch')) {
-                console.log('user already has cheese touch');
+                console.log(`${member.displayName} already has cheese touch`);
                 return;
             }
 
-            // // DM the user that said codeword
-            message.author.send('YOU HAVE CONTRACTED THE **CHEESE TOUCH**\n Please enter a ***new*** codeword that is not already on the blacklist:\n');
+            const role = message.guild.roles.cache.find(role => role.name === 'Cheese Touch');
+
+            if (role) {
+                const membersWithRole = message.guild.roles.cache.get(role.id).members;
+                membersWithRole.forEach(member => {
+                  if (member.id !== message.author.id) {
+                    member.roles.remove(role)
+                      .then(() => {
+                        console.log(`Role "${role.name}" has been removed from ${member.displayName}.`);
+                      })
+                      .catch(error => {
+                        console.error(error);
+                      });
+                  }
+                });
+                message.member.roles.add(role)
+                  .then(() => {
+                    console.log(`Role "${role.name}" has been assigned to ${message.author.username}.`);
+                    // DM the user that said codeword
+                    message.author.send('YOU HAVE CONTRACTED THE **CHEESE TOUCH**\n Please enter a ***new*** codeword that is not already on the blacklist:\n');
+                  })
+                  .catch(error => {
+                    console.error(error);
+                  });
+              }
 
         }
 	},
