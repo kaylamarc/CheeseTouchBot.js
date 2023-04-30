@@ -1,74 +1,96 @@
-const { Events } = require('discord.js');
+const { Events, ChannelType } = require('discord.js');
 const fs = require('fs');
+const { guildId } = require('../config.json');
+
 
 // Initialize blacklist with 100 most common English words
 const commonWords = fs.readFileSync('blacklist.txt', 'utf8').split('\n');
 const blacklist = new Set(commonWords.slice(0, 100));
 
+// set initial codeword to most commonly used word in english language
+let codeword = 'the'
+
 module.exports = {
     name: Events.MessageCreate,
     async execute(message) {
 
-        //get the cheese touch emoji in the guild
-        const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
-
         // grab the message content
         messageContent = message.content.toLowerCase();
 
-        // check if the message contains the codeword and that it's not from a bot
-        if (messageContent.includes('test') && !message.author.bot) {
+            //get the cheese touch emoji in the guild
+            const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
 
-            // get author as guild member
-            const member = message.member;
+            // check if the message contains the codeword and that it's not from a bot
+            if (messageContent.includes(codeword) && !message.author.bot) {
 
-            // check if they already have the cheese touch
-            if (member.roles.cache.some(role => role.name === 'Cheese Touch')) {
-                console.log(`${member.displayName} already has cheese touch`);
-                return;
-            }
+                // get author as guild member
+                const member = message.member;
 
-            // grab the cheese touch role
-            const role = message.guild.roles.cache.find(role => role.name === 'Cheese Touch');
+                // check if they already have the cheese touch
+                if (hasCheeseTouch(member)) {
+                    console.log(`${member.displayName} already has cheese touch`);
+                    return;
+                }
 
-            // check if role exists
-            if (role) {
-                // get all members with cheese touch role
-                const membersWithRole = message.guild.roles.cache.get(role.id).members;
+                // grab the cheese touch role
+                const role = message.guild.roles.cache.find(role => role.name === 'Cheese Touch');
 
-                // remove everyone that has the cheese touch role
-                membersWithRole.forEach(member => {
-                    if (member.id !== message.author.id) {
-                        member.roles.remove(role)
-                            .then(() => {
-                                console.log(`Role '${role.name}' has been removed from ${member.displayName}.`);
-                            })
-                            .catch(error => {
-                                console.error(error);
-                            });
-                    }
-                });
+                // check if role exists
+                if (role) {
+                    // get all members with cheese touch role
+                    const membersWithRole = message.guild.roles.cache.get(role.id).members;
 
-                // add the role to the message author
-                message.member.roles.add(role)
-                    .then(() => {
-                        console.log(`Role '${role.name}' has been assigned to ${message.author.username}.`);
-                        message.react(cheeseTouchEmoji);
-                        message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
-                        // DM the user that said codeword
-                        message.author.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\n Please enter a ***new*** codeword that is not already on the blacklist:${getBlacklistStr()}`);
-                    })
-                    .catch(error => {
-                        console.error(error);
+                    // remove everyone that has the cheese touch role
+                    membersWithRole.forEach(member => {
+                        if (member.id !== message.author.id) {
+                            member.roles.remove(role)
+                                .then(() => {
+                                    console.log(`Role '${role.name}' has been removed from ${member.displayName}.`);
+                                })
+                                .catch(error => {
+                                    console.error(error);
+                                });
+                        }
                     });
+
+                    // add the role to the message author
+                    message.member.roles.add(role)
+                        .then(() => {
+                            console.log(`Role '${role.name}' has been assigned to ${message.author.username}.`);
+
+                            // react to message containing codeword with cheesetouch emoji
+                            message.react(cheeseTouchEmoji);
+
+                            // reply to message with codeword announcing transfer of cheese touch
+                            message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
+
+                            // DM the user that said codeword
+                            message.author.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nInvalid Codewords:${getBlacklistStr()}`);
+                            
+
+                            // ^^ THIS WILL NOW BE A MODAL
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
             }
-        }
+
     },
 };
 
 // returns a string list of the blacklist
 function getBlacklistStr() {
-	str = '\n- ';
-	arr = Array.from(blacklist.values());
-	str += arr.join('\n- ')
-	return str;
+    str = '\n- ';
+    arr = Array.from(blacklist.values());
+    str += arr.join('\n- ')
+    return str;
+}
+
+// check if they already have the cheese touch
+function hasCheeseTouch(member) {
+    if (member.roles.cache.some(role => role.name === 'Cheese Touch')) {
+        return true;
+    }
+    return false;
 }
