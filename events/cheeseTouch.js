@@ -1,6 +1,5 @@
-const { Events, ChannelType } = require('discord.js');
+const { Events } = require('discord.js');
 const fs = require('fs');
-const { guildId } = require('../config.json');
 
 
 // Initialize blacklist with 100 most common English words
