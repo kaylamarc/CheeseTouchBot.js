@@ -11,7 +11,9 @@ const client = new Client({
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.DirectMessages,
 	],
+	partials: [Partials.Channel], 
 	presence: {
 		activities: [{
 			type: ActivityType.Watching,
