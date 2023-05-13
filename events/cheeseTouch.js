@@ -67,11 +67,12 @@ module.exports = {
         // }
         // else {
 
-        // get the cheese touch emoji in the guild
-        // const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
 
         // check if the message contains the codeword and that it's not from a bot
-        if (messageContent.includes(codeword) && !message.author.bot && !message.channel.type.DM) {
+        if (messageContent.includes(codeword) && !message.author.bot && (message.channel.type !== ChannelType.DM)) {
+
+            // get the cheese touch emoji in the guild
+            const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
 
             // get author as guild member
             const member = message.member;
@@ -115,10 +116,10 @@ module.exports = {
                         console.log(`Role '${role.name}' has been assigned to ${message.author.username}.`);
 
                         // react to message containing codeword with cheesetouch emoji
-                        // message.react(cheeseTouchEmoji);
+                        message.react(cheeseTouchEmoji);
 
                         // reply to message with codeword announcing transfer of cheese touch
-                        message.reply(` ${message.author} has contracted the ${role}! `);
+                        message.reply(` ${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
 
                         // get the DM channel with the infected person
                         const dmChannel = await member.createDM();
