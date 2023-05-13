@@ -15,7 +15,7 @@ let infected;
 let codewordSet = false;
 
 // setting the codeword hasn't been done or timed out & reassigned
-let unresolved = true;
+let resolved = false;
 
 module.exports = {
     name: Events.MessageCreate,
@@ -71,7 +71,7 @@ module.exports = {
         // const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
 
         // check if the message contains the codeword and that it's not from a bot
-        if (messageContent.includes(codeword) && !message.author.bot) {
+        if (messageContent.includes(codeword) && !message.author.bot && !message.channel.type.DM) {
 
             // get author as guild member
             const member = message.member;
@@ -110,6 +110,8 @@ module.exports = {
                         codewordSet = false;
                         unresolved = true;
 
+                        let channel = message.channel;
+
                         console.log(`Role '${role.name}' has been assigned to ${message.author.username}.`);
 
                         // react to message containing codeword with cheesetouch emoji
@@ -118,92 +120,87 @@ module.exports = {
                         // reply to message with codeword announcing transfer of cheese touch
                         message.reply(` ${message.author} has contracted the ${role}! `);
 
-                        let filter = (message) => {
-                            return message.author.id === infected.id;
-                        };
-
+                        // get the DM channel with the infected person
                         const dmChannel = await member.createDM();
 
-                        console.log('should send the message in DM');
                         // DM the user that said codeword
-                        dmChannel.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`).then(() => {
-                            // handle a timeout
-                            dmChannel.awaitMessages({ filter, max: 1, time: 10000, errors: ['time'] })
-                                .then((c) => {
-                                    console.log('AWAITING')
+                        dmChannel.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`);
+                        const collectorFilter = (m) => m.author.id === infected.id && !m.author.bot && isValidCodeword(m);
+                        const collector = dmChannel.createMessageCollector({ filter: collectorFilter, time: 10000 });
 
-                                    let captured = c.first().content.toLowerCase();
+                        collector.on('collect', (message) => {
 
-                                    // invalid if contains spaces (multiple words)
-                                    if (captured.includes(' ') && codewordSet === false) {
-                                        throw new Error('Invalid. Please make sure the new codeword is only a single word (with no whitespace).', {
-                                            cause: { code: 'multiword', values: [captured] },
-                                        });
-                                    }
+                            console.log(isValidCodeword(message));
+                            console.log(collectorFilter(message));
+                            console.log(`collected ${message}`);
 
-                                    if (blacklist.has(captured) && codewordSet === false) {
-                                        throw new Error('Invalid. Please make sure the new codeword is not on the blacklist.', {
-                                            cause: { code: 'alreadyBlacklisted', values: [captured] },
-                                        });
-                                    }
+                            msg = message.content.toLowerCase();
 
-                                    if (codewordSet === true) {
-                                        throw new Error('You have already set the codeword. You cannot change it.', {
-                                            cause: { code: 'alreadySet', values: [captured] },
-                                        });
-                                    }
+                            // validate to the user
+                            dmChannel.send('Valid Codeword. Adding to blacklist.');
 
-                                    if (!blacklist.has(captured) && !captured.includes(' ') && codewordSet === false) {
+                            // add to blacklist set
+                            blacklist.add(msg);
 
-                                        // validate to the user
-                                        message.author.send('Valid Codeword. Adding to blacklist.');
+                            // append to the file
+                            fs.appendFileSync('blacklist.txt', `\n${msg}`);
 
-                                        // add to blacklist set
-                                        blacklist.add(captured);
+                            // set the new codeword
+                            codeword = msg;
 
-                                        // append to the file
-                                        fs.appendFileSync('blacklist.txt', `\n${captured}`);
+                            // set flag
+                            codewordSet = true;
 
-                                        // set the new codeword
-                                        codeword = captured;
+                            console.log(`New codeword = ${codeword}`);
+                            console.log(`${codeword} added to the blacklist`);
 
-                                        // set flag
-                                        codewordSet = true;
+                            channel.send('Codeword set. Resume Cheese Touch!');
 
-                                        console.log(`NEW CODEWORD = ${codeword}`);
-                                        console.log(`${codeword} added to the blacklist`);
+                            // flag that cheese touch has been successful
+                            resolved = true;
 
-                                        unresolved = false;
-                                    }
-
-                                    console.log('Possible codeword collected:');
-                                    console.log(captured);
-                                })
-                                .catch((c) => {
-                                    console.log(`c = ${c}, c.cause.code = ${c.cause.code}, c.cause.values = ${c.cause.values}`);
-                                    switch (c.cause.code) {
-                                        case 'multiword':
-                                            message.author.send(c.message);
-                                            console.log(`'${c.cause.values}' is multiple words`);
-                                            break;
-                                        case 'alreadyBlacklisted':
-                                            message.author.send(c.message);
-                                            console.log(`${c.cause.values} is already blacklisted`);
-                                            break;
-                                        case 'alreadySet':
-                                            message.author.send(c.message);
-                                            console.log(`Codeword is already set.`);
-                                            break;
-                                        default:
-                                            console.log(`${infected.displayName} took too long setting a valid codeword. Reassigning.`);
-
-                                            // notify server of timeout
-                                            message.channel.send(`${infected} took too long setting a valid codeword. Reassigning.`);
-                                    }
-
-                                });
+                            // stop the collector
+                            console.log('stopping the collector');
+                            collector.stop();
                         });
 
+                        // Respond whenever a codeword is ignored
+                        collector.on('ignore', (msg) => {
+                            msgContent = msg.content.toLowerCase();
+                            console.log(`rejected ${msgContent}`);
+
+                            // ignore messages sent by the bot itself
+                            if (msg.author.bot) {
+                                return;
+                            }
+
+                            // respond on basis of why it was ignored
+                            if (codewordSet) {
+                                dmChannel.send('You have already set the codeword. You cannot change it.');
+                                console.log('Reason: codeword already set.');
+                            }
+                            else if (msgContent.includes(' ')) {
+                                dmChannel.send('Invalid. Please make sure the codeword is only a single word (with no whitespace).');
+                                console.log('Reason: codeword includes whitespace.');
+                            }
+                            else if (blacklist.has(msgContent)) {
+                                dmChannel.send('Invalid. Please make sure the codeword not already on the blacklist.');
+                                console.log('Reason: codeword already exists in the blacklist.');
+                            }
+
+                            // reset timer based on last interaction
+                            collector.resetTimer();
+                        });
+
+                        // after collector finishes
+                        collector.on('end', (collected) => {
+
+                            // check for timeout
+                            if (resolved === false) {
+                                console.log(`${infected.displayName} took too long in providing a valid codeword. Reassigning...`);
+                                channel.send(`${infected} took too long in providing a valid codeword. Reassigning...`);
+                            }
+                        })
                     });
             }
         }
@@ -229,5 +226,5 @@ function hasCheeseTouch(member) {
 
 // checks if message contains a valid codeword
 function isValidCodeword(message) {
-    return !blacklist.has(message.content) && !message.content.includes(' ') && codewordSet === false;
+    return !blacklist.has(message.content.toLowerCase()) && !message.content.includes(' ') && codewordSet === false;
 }
