@@ -1,4 +1,4 @@
-const { Events, ChannelType } = require('discord.js');
+const { Events, ChannelType, MessageCollector } = require('discord.js');
 const fs = require('fs');
 
 // Initialize blacklist with 100 most common English words
@@ -102,7 +102,7 @@ module.exports = {
 
                     // add the role to the message author
                     message.member.roles.add(role)
-                        .then(() => {
+                        .then(async () => {
                             infected = member;
                             codewordSet = false;
 
@@ -114,21 +114,30 @@ module.exports = {
                             // reply to message with codeword announcing transfer of cheese touch
                             message.reply(`${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
 
+                            let filter = (message) => {
+                                return message.author.id === infected.id;
+                            };
+
+                            const dmChannel = await member.createDM();
+
                             // DM the user that said codeword
-                            message.author.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`);
+                            dmChannel.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`)
 
-                        })
-
-
-                        .catch(error => {
-                            console.error(error);
+                            // handle a timeout
+                            dmChannel.awaitMessages({ filter, max: 1, time: 10000, errors: ['time'] })
+                                .then((c) => {
+                                    console.log('New message collected');
+                                    console.log(c);
+                                })
+                                .catch((c) => {
+                                    console.log(`${infected.displayName} took too long setting a codeword. Reassigning.`);
+                                    message.channel.send(`${infected} took too long setting a codeword. Reassigning.`);
+                                },
+                                );
                         });
                 }
             }
         }
-
-
-
     },
 };
 
@@ -146,4 +155,9 @@ function hasCheeseTouch(member) {
         return true;
     }
     return false;
+}
+
+// checks if message contains a valid codeword
+function isValidCodeword(message) {
+
 }
