@@ -14,65 +14,14 @@ let infected;
 // if the codeword is currently set
 let codewordSet = false;
 
-// setting the codeword hasn't been done or timed out & reassigned
-let resolved = false;
-
 module.exports = {
     name: Events.MessageCreate,
     async execute(message) {
         // grab the message content
         messageContent = message.content.toLowerCase();
 
-        // if (message.channel.type == ChannelType.DM) {
-
-        //     // only capture input from infected people
-        //     if (!message.author.bot && message.author.id === infected.id) {
-
-        //         // infected already set the codeword, do not let them change it again
-        //         if (codewordSet == true) {
-        //             message.author.send('You have already set the codeword. You cannot change it.');
-        //             return;
-        //         }
-
-        //         // invalid if contains spaces (multiple words) or on blacklist already
-        //         if ((messageContent.includes(' ') || blacklist.has(messageContent)) && codewordSet === false) {
-        //             message.author.send('Invalid. Please make sure the codeword is only a single word (with no whitespace) and is not on the blacklist.');
-        //         }
-
-        //         // make sure valid codeword and that codeword hasn't been set this turn, add to blacklist and set flags
-        //         if (!blacklist.has(messageContent) && !messageContent.includes(' ') && codewordSet === false) {
-
-        //             // validate to the user
-        //             message.author.send('Valid Codeword. Adding to blacklist.');
-
-        //             // add to blacklist set
-        //             blacklist.add(messageContent);
-
-        //             // append to the file
-        //             fs.appendFileSync('blacklist.txt', `\n${messageContent}`);
-
-        //             // set the new codeword
-        //             codeword = messageContent;
-
-        //             // set flag
-        //             codewordSet = true;
-
-        //             console.log(`New codeword = ${codeword}`);
-        //             console.log(`${codeword} added to the blacklist`);
-        //         }
-        //     }
-        //     else if (!message.author.bot) {
-        //         message.author.send('You do not have the cheese touch. You cannot set a codeword right now.');
-        //     }
-        // }
-        // else {
-
-
         // check if the message contains the codeword and that it's not from a bot
         if (messageContent.includes(codeword) && !message.author.bot && (message.channel.type !== ChannelType.DM)) {
-
-            // get the cheese touch emoji in the guild
-            const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
 
             // get author as guild member
             const member = message.member;
@@ -86,126 +35,10 @@ module.exports = {
             // grab the cheese touch role
             const role = message.guild.roles.cache.find(role => role.name === 'Cheese Touch');
 
-            // check if role exists
-            if (role) {
-                // get all members with cheese touch role
-                const membersWithRole = message.guild.roles.cache.get(role.id).members;
+            // handle assigning cheese touch and getting codeword (and possible reassigning)
+            assignCheeseTouch(message, role, member);
 
-                // remove everyone that has the cheese touch role
-                membersWithRole.forEach(member => {
-                    if (member.id !== message.author.id) {
-                        member.roles.remove(role)
-                            .then(() => {
-                                console.log(`Role '${role.name}' has been removed from ${member.displayName}.`);
-                            })
-                            .catch(error => {
-                                console.error(error);
-                            });
-                    }
-                });
-
-                // add the role to the message author
-                message.member.roles.add(role)
-                    .then(async () => {
-                        infected = member;
-                        codewordSet = false;
-                        unresolved = true;
-
-                        let channel = message.channel;
-
-                        console.log(`Role '${role.name}' has been assigned to ${message.author.username}.`);
-
-                        // react to message containing codeword with cheesetouch emoji
-                        message.react(cheeseTouchEmoji);
-
-                        // reply to message with codeword announcing transfer of cheese touch
-                        message.reply(` ${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
-
-                        // get the DM channel with the infected person
-                        const dmChannel = await member.createDM();
-
-                        // DM the user that said codeword
-                        dmChannel.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`);
-                        const collectorFilter = (m) => m.author.id === infected.id && !m.author.bot && isValidCodeword(m);
-                        const collector = dmChannel.createMessageCollector({ filter: collectorFilter, time: 10000 });
-
-                        collector.on('collect', (message) => {
-
-                            console.log(isValidCodeword(message));
-                            console.log(collectorFilter(message));
-                            console.log(`collected ${message}`);
-
-                            msg = message.content.toLowerCase();
-
-                            // validate to the user
-                            dmChannel.send('Valid Codeword. Adding to blacklist.');
-
-                            // add to blacklist set
-                            blacklist.add(msg);
-
-                            // append to the file
-                            fs.appendFileSync('blacklist.txt', `\n${msg}`);
-
-                            // set the new codeword
-                            codeword = msg;
-
-                            // set flag
-                            codewordSet = true;
-
-                            console.log(`New codeword = ${codeword}`);
-                            console.log(`${codeword} added to the blacklist`);
-
-                            channel.send('Codeword set. Resume Cheese Touch!');
-
-                            // flag that cheese touch has been successful
-                            resolved = true;
-
-                            // stop the collector
-                            console.log('stopping the collector');
-                            collector.stop();
-                        });
-
-                        // Respond whenever a codeword is ignored
-                        collector.on('ignore', (msg) => {
-                            msgContent = msg.content.toLowerCase();
-                            console.log(`rejected ${msgContent}`);
-
-                            // ignore messages sent by the bot itself
-                            if (msg.author.bot) {
-                                return;
-                            }
-
-                            // respond on basis of why it was ignored
-                            if (codewordSet) {
-                                dmChannel.send('You have already set the codeword. You cannot change it.');
-                                console.log('Reason: codeword already set.');
-                            }
-                            else if (msgContent.includes(' ')) {
-                                dmChannel.send('Invalid. Please make sure the codeword is only a single word (with no whitespace).');
-                                console.log('Reason: codeword includes whitespace.');
-                            }
-                            else if (blacklist.has(msgContent)) {
-                                dmChannel.send('Invalid. Please make sure the codeword not already on the blacklist.');
-                                console.log('Reason: codeword already exists in the blacklist.');
-                            }
-
-                            // reset timer based on last interaction
-                            collector.resetTimer();
-                        });
-
-                        // after collector finishes
-                        collector.on('end', (collected) => {
-
-                            // check for timeout
-                            if (resolved === false) {
-                                console.log(`${infected.displayName} took too long in providing a valid codeword. Reassigning...`);
-                                channel.send(`${infected} took too long in providing a valid codeword. Reassigning...`);
-                            }
-                        })
-                    });
-            }
         }
-        // }
     },
 };
 
@@ -228,4 +61,155 @@ function hasCheeseTouch(member) {
 // checks if message contains a valid codeword
 function isValidCodeword(message) {
     return !blacklist.has(message.content.toLowerCase()) && !message.content.includes(' ') && codewordSet === false;
+}
+
+// gets a random member in the guild that doesn't have the cheesetouch
+function getRandomMember(guild) {
+    let member = infected;
+
+    while (member.id === infected.id) {
+        guild.members.fetch()
+            .then(allMembers => {
+                member = allMembers.random();
+            })
+            .catch(console.error);
+    }
+
+    return member;
+}
+
+// handle adding the role and getting codeword
+function assignCheeseTouch(message, role, member) {
+
+    if (codewordSet) {
+        return;
+    }
+
+    // get the cheese touch emoji in the guild
+    const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
+
+    const guild = message.guild;
+
+    // check if role exists
+    if (role) {
+        // get all members with cheese touch role
+        const membersWithRole = message.guild.roles.cache.get(role.id).members;
+
+        // remove everyone that has the cheese touch role
+        membersWithRole.forEach(member => {
+            if (member.id !== message.author.id) {
+                member.roles.remove(role)
+                    .then(() => {
+                        console.log(`Role '${role.name}' has been removed from ${member.displayName}.`);
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            }
+        });
+
+        // add the role to the message author
+        message.member.roles.add(role)
+            .then( () => {
+                infected = member;
+                codewordSet = false;
+
+                let channel = message.channel;
+
+                console.log(`Role '${role.name}' has been assigned to ${message.author.username}.`);
+
+                // react to message containing codeword with cheesetouch emoji
+                message.react(cheeseTouchEmoji);
+
+                // reply to message with codeword announcing transfer of cheese touch
+                channel.send(` ${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
+
+                getCodeword(member, channel, guild);
+
+            });
+    }
+}
+
+async function getCodeword(member, channel, guild) {
+
+    // get the DM channel with the infected person
+    const dmChannel = await member.createDM();
+
+    // DM the user that said codeword
+    dmChannel.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`);
+    const collectorFilter = (m) => m.author.id === infected.id && !m.author.bot && isValidCodeword(m);
+    const collector = dmChannel.createMessageCollector({ filter: collectorFilter, time: 1000 });
+
+    collector.on('collect', (message) => {
+
+        console.log(`collected ${message}`);
+
+        msg = message.content.toLowerCase();
+
+        // validate to the user
+        dmChannel.send('Valid Codeword. Adding to blacklist.');
+
+        // add to blacklist set
+        blacklist.add(msg);
+
+        // append to the file
+        fs.appendFileSync('blacklist.txt', `\n${msg}`);
+
+        // set the new codeword
+        codeword = msg;
+
+        // set flag
+        codewordSet = true;
+
+        console.log(`New codeword = ${codeword}`);
+        console.log(`${codeword} added to the blacklist`);
+
+        channel.send('Codeword set. Resume Cheese Touch!');
+
+        // stop the collector
+        console.log('stopping the collector');
+        collector.stop();
+    });
+
+    // Respond whenever a codeword is ignored
+    collector.on('ignore', (msg) => {
+        msgContent = msg.content.toLowerCase();
+        console.log(`rejected ${msgContent}`);
+
+        // ignore messages sent by the bot itself
+        if (msg.author.bot) {
+            return;
+        }
+
+        // respond on basis of why it was ignored
+        if (codewordSet) {
+            dmChannel.send('You have already set the codeword. You cannot change it.');
+            console.log('Reason: codeword already set.');
+        }
+        else if (msgContent.includes(' ')) {
+            dmChannel.send('Invalid. Please make sure the codeword is only a single word (with no whitespace).');
+            console.log('Reason: codeword includes whitespace.');
+        }
+        else if (blacklist.has(msgContent)) {
+            dmChannel.send('Invalid. Please make sure the codeword not already on the blacklist.');
+            console.log('Reason: codeword already exists in the blacklist.');
+        }
+
+        // reset timer based on last interaction
+        collector.resetTimer();
+    });
+
+    // after collector finishes
+    collector.on('end', () => {
+
+        // check for timeout
+        if (codewordSet === false) {
+            console.log(`${infected.displayName} took too long in providing a valid codeword. Reassigning...`);
+            dmChannel.send('Timeout. You took too long in providing a codeword. Reassigning.');
+            channel.send(`${infected} took too long in providing a valid codeword. Reassigning...`);
+
+            // reassign cheese touch
+            assignCheeseTouch(getRandomMember(guild));
+        }
+    })
 }
