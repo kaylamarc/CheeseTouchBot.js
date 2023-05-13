@@ -16,6 +16,8 @@ let codewordSet = false;
 
 let allServerMembers;
 
+let guild;
+
 module.exports = {
     name: Events.MessageCreate,
     async execute(message) {
@@ -29,7 +31,7 @@ module.exports = {
             const member = message.member;
 
             // get all members of guild
-            const guild = message.guild;
+            guild = message.guild;
             console.log('==============================')
             console.log(`all members:`)
             allServerMembers = await guild.members.fetch();
@@ -73,21 +75,6 @@ function isValidCodeword(message) {
     return !blacklist.has(message.content.toLowerCase()) && !message.content.includes(' ') && codewordSet === false;
 }
 
-// gets a random member in the guild that doesn't have the cheesetouch
-function getRandomMember(guild) {
-    let member = infected;
-
-    while (member.id === infected.id) {
-        guild.members.fetch()
-            .then(allMembers => {
-                member = allMembers.random();
-            })
-            .catch(console.error);
-    }
-
-    return member;
-}
-
 // handle adding the role and getting codeword
 function assignCheeseTouch(message, role, member, guild) {
 
@@ -97,8 +84,6 @@ function assignCheeseTouch(message, role, member, guild) {
 
     // get the cheese touch emoji in the guild
     const cheeseTouchEmoji = message.guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
-
-
 
     // check if role exists
     if (role) {
@@ -134,13 +119,13 @@ function assignCheeseTouch(message, role, member, guild) {
                 // reply to message with codeword announcing transfer of cheese touch
                 channel.send(` ${cheeseTouchEmoji} ${message.author} has contracted the ${role}! ${cheeseTouchEmoji}`);
 
-                getCodeword(member, message, channel, guild, role);
+                getCodeword(member, channel);
 
             });
     }
 }
 
-async function getCodeword(member, message, channel, guild, role) {
+async function getCodeword(member, channel) {
 
     // get the DM channel with the infected person
     const dmChannel = await member.createDM();
@@ -148,7 +133,7 @@ async function getCodeword(member, message, channel, guild, role) {
     // DM the user that said codeword
     dmChannel.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`);
     const collectorFilter = (m) => m.author.id === infected.id && !m.author.bot && isValidCodeword(m);
-    const collector = dmChannel.createMessageCollector({ filter: collectorFilter, time: 1000 });
+    const collector = dmChannel.createMessageCollector({ filter: collectorFilter, time: 30000 });
 
     collector.on('collect', (message) => {
 
@@ -219,35 +204,54 @@ async function getCodeword(member, message, channel, guild, role) {
             channel.send(`${infected} took too long in providing a valid codeword. Reassigning...`);
 
 
+
             // get a random server member
             let possibleInfected = allServerMembers.random();
 
             // try again if already infected person 
             // (TODO: find a better solution to not getting the same infected person)
-            if (possibleInfected.id === infected.id) {
+            if (possibleInfected.id === infected.id || !possibleInfected.user.bot) {
                 possibleInfected = allServerMembers.random();
             }
 
-            console.log(`Reassigning the cheese touch to: ${possibleInfected}`);
+            console.log(`Reassigning the cheese touch to: ${possibleInfected.displayName}`);
+
+            // reassign the cheese touch role
+            reassignCheeseTouch(member, channel);
 
         }
     });
-
-    // if (collector.end) {
-    //     console.log('collector ended')
-    // }
-
-    // if (!codewordSet) {
-    // dmChannel.send('Timeout. You took too long in providing a codeword. Reassigning...');
-    // console.log('why didnt that send');
-    // channel.send(`${infected} took too long in providing a valid codeword. Reassigning...`);
-
-    // newMember = getRandomMember(guild)
-    // // reassign cheese touch
-    // assignCheeseTouch(member, message, channel, guild, role);
 }
 
-// async function handleReassign() {
-//     directMessage = await infected.createDM();
-//     dmChannel.send('Timeout. You took too long in providing a codeword. Reassigning...');
-// }
+function reassignCheeseTouch(newInfected, channel) {
+    // get the cheese touch emoji in the guild
+    const cheeseTouchEmoji = guild.emojis.cache.find(emoji => emoji.name === 'cheesetouch');
+
+    const role = guild.roles.cache.find(role => role.name === 'Cheese Touch');
+
+    // check if role exists
+    if (role) {
+
+        infected.roles.remove(role)
+            .then(() => {
+                console.log(`Role '${role.name}' has been removed from ${infected.displayName}.`);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+
+        // add the role to the message author
+        newInfected.roles.add(role)
+            .then(() => {
+                infected = newInfected;
+                codewordSet = false;
+
+                console.log(`Role '${role.name}' has been assigned to ${newInfected.username}.`);
+
+                // reply to message with codeword announcing transfer of cheese touch
+                channel.send(` ${cheeseTouchEmoji} ${newInfected} has contracted the ${role}! ${cheeseTouchEmoji}`);
+
+                getCodeword(newInfected, channel);
+            });
+    }
+}
