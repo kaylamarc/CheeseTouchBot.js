@@ -18,6 +18,9 @@ let allServerMembers;
 
 let guild;
 
+// 12 hours in milliseconds
+const TIMEOUT = 1000 * 60 * 60 * 12;
+
 module.exports = {
     name: Events.MessageCreate,
     async execute(message) {
@@ -130,7 +133,7 @@ async function getCodeword(member, channel) {
     dmChannel.send(`:cheese: YOU HAVE CONTRACTED THE  **CHEESE TOUCH** :cheese:\nPlease send me your codeword.\nCodewords must only be **ONE WORD** with **no spaces** and cannot be a word someone else has used.\nBlacklist:${getBlacklistStr()}`)
         .then(() => {
             const collectorFilter = (m) => m.author.id === infected.id && !m.author.bot && isValidCodeword(m);
-            const collector = dmChannel.createMessageCollector({ filter: collectorFilter, time: 10000 });
+            const collector = dmChannel.createMessageCollector({ filter: collectorFilter, time: TIMEOUT });
 
             collector.on('collect', (message) => {
 
