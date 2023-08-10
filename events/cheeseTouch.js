@@ -1,5 +1,6 @@
 const { Events, ChannelType, User } = require('discord.js');
-const fs = require('fs');
+const fs = require('fs');const { Op } = require('sequelize');
+const { Users } = require('./dbObjects.js');
 
 // Initialize blacklist with 100 most common English words
 const commonWords = fs.readFileSync('blacklist.txt', 'utf8').split('\n');
@@ -26,6 +27,8 @@ module.exports = {
     async execute(message) {
         // grab the message content
         messageContent = message.content.toLowerCase();
+
+        if (message.author.bot) return;
 
         // check if the message contains the codeword and that it's not from a bot
         if (messageContent.includes(codeword) && !message.author.bot && (message.channel.type !== ChannelType.DM)) {
@@ -253,3 +256,9 @@ function reassignCheeseTouch(newInfected, channel) {
             });
     }
 }
+
+
+function addContracted(id, amount) {
+	const user = 
+}
+
