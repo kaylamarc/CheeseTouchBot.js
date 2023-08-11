@@ -110,7 +110,7 @@ function assignCheeseTouch(message, role, member, guild) {
 
                 let channel = message.channel;
 
-                console.log(`Role '${role.name}' has been assigned to ${message.author.displayName}.`);
+                console.log(`Role '${role.name}' has been assigned to ${infected.displayName}.`);
 
                 // react to message containing codeword with cheesetouch emoji
                 message.react(cheeseTouchEmoji);
